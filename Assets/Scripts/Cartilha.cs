@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+//THIS GAME IS BEING MADE WITH LOTS OF HELP FROM THIS SOLITAIRE UNITY TUTORIAL BY MEGALOMOBILE: https://www.youtube.com/watch?v=1Cmb181-quI
+
 public class Cartilha : MonoBehaviour
 {
     //Deal 5 cards to the player and to the CPUs -> done.
@@ -31,8 +33,10 @@ public class Cartilha : MonoBehaviour
     public GameObject cardPrefab;
 
     //make the board detect its childs so it can detect who won the round. I'll need to make the card inform the board to update it maybe.
+    //changed approach: create a board game logic inside the main script
     public GameObject boardGameObject;
     public List<string> board;
+    public List<string> playerTurnLog;
 
     // Start is called before the first frame update
     void Start()
@@ -57,7 +61,13 @@ public class Cartilha : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        
+        //determining who won: for testing purposes, whenever I add a card to the board I want to see if it can determine who won properly.
+        //obviously will change this in the future
+        if (Input.GetMouseButtonDown(0))
+        {
+            print(whoWonRound() + " wins round!");
+        }
+
     }
 
     public static List<string> generateDeck()
@@ -137,5 +147,48 @@ public class Cartilha : MonoBehaviour
 
             verticalOffset = !verticalOffset;
         }
+    }
+
+    //determining who won the round
+    string whoWonRound()
+    {
+        //it needs a list of values just to compare them. I got a list of card values deck
+        //starting from weakest to strongest (not counting the manilha). Maybe I can use it.
+        List<string> deck = generateDeck();
+
+        //I need to create a list of values, see who's the maximum one, see its position, compare to the playerTurnLog to check who won.
+        List<int> values = new List<int>();
+
+        string whoWon;
+        int whoWonIndex = 0;
+
+        //Grab the position of the card (its value) in deck
+        foreach (string card in board)
+        {
+            foreach (string cardName in deck)
+            {
+                if (card == cardName) 
+                {
+                    values.Add(deck.IndexOf(cardName));
+                    break;
+                }
+            }
+        }
+
+        //see what's the maximum value in the list of values
+        int maxValue = 0;
+        foreach (int value in values)
+        {
+            if (value > maxValue)
+            {
+                maxValue = value;
+                whoWonIndex = values.IndexOf(value);
+            }
+        }
+
+        //now we see the position of the card the has won. then we just grab the name of the player from playerTurnLog.
+        whoWon = playerTurnLog[whoWonIndex];
+        return whoWon;
+
     }
 }
