@@ -11,8 +11,7 @@ public class Cartilha : MonoBehaviour
     //make the cards on the CPUs face down -> done!
     //make the card go to the board when you click it -> done!
     //make the board detect its children so it can detect who won the round. I'll need to make the card inform the board to update it maybe. -> done!
-    //make it turn-based. make the CPUs play after the player, and then return who won the round -> half-done, CPU play missing
-    //I'm getting a Index Out of Range error in line 218. Check it. I'm almost there  for the AI playing with me.
+    //make it turn-based. make the CPUs play after the player, and then return who won the round -> done!
 
 
     public static string[] suits = { "D", "S", "H", "C" };
@@ -206,10 +205,12 @@ public class Cartilha : MonoBehaviour
         {
             if (value > maxValue)
             {
-                maxValue = value;
                 whoWonIndex = values.IndexOf(value);
+                maxValue = value;                
             }
         }
+
+        print(whoWonIndex);
 
         //now we see the position of the card the has won. then we just grab the name of the player from playerTurnLog.
         whoWon = playerTurnLog[whoWonIndex];
@@ -232,7 +233,7 @@ public class Cartilha : MonoBehaviour
         {
             activeTurn[lastPlayerIndex] = false;
             activeTurn[lastPlayerIndex + 1] = true;
-            print("It is now " + playerList[lastPlayerIndex + 1] + "'s turn.");
+            print("It is now " + playerList[lastPlayerIndex + 1].name + "'s turn.");
             StartCoroutine(cpuPlays(playerList[lastPlayerIndex + 1]));
         } 
         
@@ -243,8 +244,8 @@ public class Cartilha : MonoBehaviour
             activeTurn[lastPlayerIndex] = false;
             StartCoroutine(resetBoard());
             activeTurn[0] = true;
-            playerTurnLog.Clear();
             print(whoWonRound() + " wins the round!");
+            playerTurnLog.Clear();
             print("It is now Player's turn.");
         }
         
@@ -259,8 +260,9 @@ public class Cartilha : MonoBehaviour
             Destroy(card.gameObject);
         }
 
-        //reset the board offset position
+        //reset the board offset position and the variable board itself
         userInput.boardXOffset = 0;
+        board.Clear();
     }
 
     //making the CPU play and how it will do it
@@ -276,6 +278,8 @@ public class Cartilha : MonoBehaviour
         {
             cardsInHand.Add(cardTransform.gameObject.name);
         }
+
+        
 
         //Grab the position of the card (its value) in deck
         foreach (string card in cardsInHand)
@@ -293,10 +297,15 @@ public class Cartilha : MonoBehaviour
         //now that the CPU knows the values of the card, for simplifying purposes, it will always choose the maximum value for now.
         //I can increment the logic after haha
         int maxValueIndex = 0;
+        int maxValue = 0;
 
         foreach (int value in valuesInHand)
         {
-            if (maxValueIndex < value) maxValueIndex = valuesInHand.IndexOf(value);
+            if (maxValue < value)
+            {
+                maxValueIndex = valuesInHand.IndexOf(value);
+                maxValue = value;
+            }
         }
 
         //Now the CPU plays the card with the maximum value. Destroy it from the hand and instantiate it onto the board
