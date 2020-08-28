@@ -12,6 +12,8 @@ public class Cartilha : MonoBehaviour
     //make the card go to the board when you click it -> done!
     //make the board detect its children so it can detect who won the round. I'll need to make the card inform the board to update it maybe. -> done!
     //make it turn-based. make the CPUs play after the player, and then return who won the round -> done!
+    //tidy up the coroutine for the CPU1. it's playing just as I play it.
+    //make the player only click HIS cards and only on HIS turn.
 
 
     public static string[] suits = { "D", "S", "H", "C" };
@@ -268,6 +270,7 @@ public class Cartilha : MonoBehaviour
     //making the CPU play and how it will do it
     IEnumerator cpuPlays(GameObject CPU)
     {
+        yield return new WaitForSeconds(2);
 
         List<string> deck = generateDeck();
 
@@ -322,8 +325,6 @@ public class Cartilha : MonoBehaviour
         //adding the value to the board list, and who played the card
         board.Add(newCard.name);
         playerTurnLog.Add(CPU.transform.name);
-
-        yield return new WaitForSeconds(2);
 
         justPlayed = true;
 
