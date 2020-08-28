@@ -7,7 +7,7 @@ public class UserInput : MonoBehaviour
 
     Cartilha cartilha;
 
-    float boardXOffset = 0;
+    public float boardXOffset = 0;
 
     // Start is called before the first frame update
     void Start()
@@ -56,6 +56,7 @@ public class UserInput : MonoBehaviour
                 //adding the value to the board list on main script, and who played the card
                 cartilha.board.Add(newCard.name);
                 cartilha.playerTurnLog.Add(whoPlayed);
+                cartilha.justPlayed = true;
             }
         }
     }
