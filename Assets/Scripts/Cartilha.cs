@@ -1,19 +1,25 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 //THIS GAME IS BEING MADE WITH LOTS OF HELP FROM THIS SOLITAIRE UNITY TUTORIAL BY MEGALOMOBILE: https://www.youtube.com/watch?v=1Cmb181-quI
 
 public class Cartilha : MonoBehaviour
 {
-    //Deal 5 cards to the player and to the CPUs -> done.
+    //Deal 5 cards to the player and to the CPUs -> done!
     //now do the sprite renderer and try to make the cards the child of each player -> done!
     //make the cards on the CPUs face down -> done!
     //make the card go to the board when you click it -> done!
     //make the board detect its children so it can detect who won the round. I'll need to make the card inform the board to update it maybe. -> done!
     //make it turn-based. make the CPUs play after the player, and then return who won the round -> done!
-    //tidy up the coroutine for the CPU1. it's playing just as I play it.
-    //make the player only click HIS cards and only on HIS turn.
+    //tidy up the coroutine for the CPU1. it's playing just as I play it. -> done!
+    //make the player only click HIS cards and only on HIS turn. -> done!
+    //make a coRoutine for deal -> done!
+    //make the "guesses" game logic. prompt the player how many rounds he thinks he will win before starting the round. -> done!
+    //when someone plays and wins, take out the pokerChip from its hand -> done!
+    //make more than one round, try to repeat the game logic. Also, make the match scoreboard, update it each end of the round.
 
 
     public static string[] suits = { "D", "S", "H", "C" };
@@ -24,6 +30,13 @@ public class Cartilha : MonoBehaviour
     GameObject CPU2;
     GameObject CPU3;
     GameObject boardGameObject;
+    GameObject buttonGameObject;
+    GameObject inputFieldGameObject;
+    GameObject guessTextGameObject;
+    public GameObject canvasPrefab;
+    Button button;
+    InputField inputField;
+    
 
     UserInput userInput;
 
@@ -50,6 +63,12 @@ public class Cartilha : MonoBehaviour
     //now that I can identify who won the round I might as well put a scoreboard.
     public List<int> scoreboard = new List<int>();
 
+    //poker chip prefab for the guesses
+    public GameObject pokerChip;
+
+    //guess list
+    public List<int> guessList;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -58,12 +77,13 @@ public class Cartilha : MonoBehaviour
         CPU2 = GameObject.Find("CPU2");
         CPU3 = GameObject.Find("CPU3");
         boardGameObject = GameObject.Find("Board");
+        
 
         userInput = FindObjectOfType<UserInput>();
 
         //add players to playerList and populate the activeTurn array. Player starts first
         playerList.Add(player);
-        activeTurn.Add(true);
+        activeTurn.Add(false);
         playerList.Add(CPU1);
         activeTurn.Add(false);
         playerList.Add(CPU2);
@@ -71,15 +91,22 @@ public class Cartilha : MonoBehaviour
         playerList.Add(CPU3);
         activeTurn.Add(false);
 
+        //populate the scoreboard
         foreach (GameObject player in playerList)
         {
             scoreboard.Add(0);
         }
 
-        deal(playerList);
+
+        StartCoroutine(deal(playerList));
+
+
+        
+
+        //prompt guesses before allowing player to start round.
 
         print("it is now Player's turn");
-    }
+    }   
 
     // Update is called once per frame
     void Update()
@@ -128,8 +155,9 @@ public class Cartilha : MonoBehaviour
     }
 
     //dealing the cards
-    void deal(List<GameObject> playerList)
+    IEnumerator deal(List<GameObject> playerList)
     {
+        yield return new WaitForSeconds(0.5f);
         List<string> deck = generateDeck();
         int numberOfCardsStillInTheDeck = deck.Count;
         System.Random random = new System.Random();
@@ -154,6 +182,7 @@ public class Cartilha : MonoBehaviour
                         Quaternion.identity, p.transform);
                     newCard.name = deck[k];
                     yOffset += 0.7f;
+                    yield return new WaitForSeconds(0.1f);
                 }
 
                 else
@@ -163,6 +192,7 @@ public class Cartilha : MonoBehaviour
                         Quaternion.identity, p.transform);
                     newCard.name = deck[k];
                     xOffset += 0.5f;
+                    yield return new WaitForSeconds(0.1f);
                 }
 
                 zOffset += 0.03f;
@@ -173,6 +203,17 @@ public class Cartilha : MonoBehaviour
 
             verticalOffset = !verticalOffset;
         }
+
+        //After dealing, instantiante canvas for guesses
+        GameObject canvas = Instantiate(canvasPrefab, transform.position, Quaternion.identity);
+        canvas.name = "Canvas";
+        buttonGameObject = GameObject.Find("Button");
+        inputFieldGameObject = GameObject.Find("InputField");
+        guessTextGameObject = GameObject.Find("Text");
+
+        inputField = inputFieldGameObject.GetComponent<InputField>();
+        button = buttonGameObject.GetComponent<Button>();
+        button.onClick.AddListener(guesses);
     }
 
     //determining who won the round and updating its score on the scoreboard
@@ -212,13 +253,20 @@ public class Cartilha : MonoBehaviour
             }
         }
 
-        print(whoWonIndex);
-
         //now we see the position of the card the has won. then we just grab the name of the player from playerTurnLog.
         whoWon = playerTurnLog[whoWonIndex];
 
         //updating the scoreboard
         scoreboard[whoWonIndex]++;
+
+        //taking out a poker chip from whoever won the round
+        GameObject playerWhoWon = GameObject.Find(whoWon);
+        try
+        {        
+        GameObject pokerChip = playerWhoWon.transform.Find("Poker Chip").gameObject;
+        Destroy(pokerChip);
+        }
+        catch (NullReferenceException) { print("no poker chips left"); }
         return whoWon;
 
     }
@@ -329,5 +377,71 @@ public class Cartilha : MonoBehaviour
         justPlayed = true;
 
         
+    }
+
+    void guesses()
+    {
+        GameObject canvas = GameObject.Find("Canvas");
+
+        //grabbing guesses from the player and converting them into int
+        string text = inputField.text.ToString();
+        int playerGuess = Int16.Parse(text);
+
+        guessList = new List<int>();
+
+        //for now, we grab the number of guesses of the player and make CPU guess 2 wins each. I'll work on a simple AI after.
+        guessList.Add(playerGuess);
+        guessList.Add(2);
+        guessList.Add(2);
+        guessList.Add(2);
+
+        activeTurn[0] = true;
+
+        Destroy(canvas);
+
+        dealPokerChips();
+    }
+
+    void dealPokerChips()
+    {
+
+        //for each player, the game instantiates the poker chips according to the number of guesses
+        //I can use playerList for this. gonna need to understand the positions though D=
+        bool verticalOffset = false;
+
+        foreach (GameObject player in playerList)
+        {
+            float xOffset;
+            float yOffset;
+
+            if (verticalOffset)
+            {
+                xOffset = -0.5f;
+                yOffset = -1.3f;
+                for (int i = 0; i < guessList[playerList.IndexOf(player)]; i++)
+                {
+                    GameObject newPokerChip = Instantiate(pokerChip,
+                    new Vector3(player.transform.position.x + xOffset, player.transform.position.y + yOffset, player.transform.position.z),
+                    Quaternion.identity, player.transform);
+                    newPokerChip.name = "Poker Chip";
+                    xOffset += 0.5f;
+                }
+            }
+            else
+            {
+                xOffset = -1f;
+                yOffset = 1f;
+                for (int i = 0; i < guessList[playerList.IndexOf(player)]; i++)
+                {
+                    GameObject newPokerChip = Instantiate(pokerChip,
+                    new Vector3(player.transform.position.x + xOffset, player.transform.position.y + yOffset, player.transform.position.z),
+                    Quaternion.identity, player.transform);
+                    newPokerChip.name = "Poker Chip";
+                    yOffset -= 0.5f;
+                }
+            }
+
+            verticalOffset = !verticalOffset;
+        }
     }
 }
