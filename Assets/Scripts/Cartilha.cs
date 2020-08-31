@@ -19,7 +19,8 @@ public class Cartilha : MonoBehaviour
     //make a coRoutine for deal -> done!
     //make the "guesses" game logic. prompt the player how many rounds he thinks he will win before starting the round. -> done!
     //when someone plays and wins, take out the pokerChip from its hand -> done!
-    //make more than one round, try to repeat the game logic. Also, make the match scoreboard, update it each end of the round.
+    //sort the player's hand after dealing -> done!
+    //make more than one round, try to repeat the game logic. Also, make the MATCH scoreboard, update it each end of the round.
 
 
     public static string[] suits = { "D", "S", "H", "C" };
@@ -72,6 +73,7 @@ public class Cartilha : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+
         player = GameObject.Find("Player");
         CPU1 = GameObject.Find("CPU1");
         CPU2 = GameObject.Find("CPU2");
@@ -98,7 +100,7 @@ public class Cartilha : MonoBehaviour
         }
 
 
-        StartCoroutine(deal(playerList));
+        StartCoroutine(startRound(playerList));
 
 
         
@@ -155,7 +157,7 @@ public class Cartilha : MonoBehaviour
     }
 
     //dealing the cards
-    IEnumerator deal(List<GameObject> playerList)
+    IEnumerator startRound(List<GameObject> playerList)
     {
         yield return new WaitForSeconds(0.5f);
         List<string> deck = generateDeck();
@@ -203,6 +205,8 @@ public class Cartilha : MonoBehaviour
 
             verticalOffset = !verticalOffset;
         }
+
+        sortPlayerHand();
 
         //After dealing, instantiante canvas for guesses
         GameObject canvas = Instantiate(canvasPrefab, transform.position, Quaternion.identity);
@@ -442,6 +446,82 @@ public class Cartilha : MonoBehaviour
             }
 
             verticalOffset = !verticalOffset;
+        }
+    }
+
+    void sortPlayerHand()
+    {
+        //detect list of cards the player have
+        List<string> cards = new List<string>();
+
+        List<string> deck = generateDeck();
+        
+        foreach (Transform child in player.transform)
+        {
+            if (child.CompareTag("Card"))
+                cards.Add(child.name);
+        }
+
+        
+
+        //grab their values
+        List<int> cardValues = new List<int>();
+
+        foreach (string card in cards)
+        {
+            foreach (string cardName in deck)
+            {
+                if (card == cardName)
+                {
+                    cardValues.Add(deck.IndexOf(cardName));
+                    break;
+                }
+            }
+        }
+
+        //sort it
+        sort(cardValues, cards);
+
+        //destroy player's hand hehe
+        foreach (Transform child in player.transform) { Destroy(child.gameObject); }
+
+        //instantiate sorted hand
+        float xOffset = 0;
+        float zOffset = 0.03f;
+        foreach (string card in cards)
+        {          
+            GameObject newCard = Instantiate(cardPrefab,
+                        new Vector3(player.transform.position.x + xOffset, player.transform.position.y, player.transform.position.z + zOffset),
+                        Quaternion.identity, player.transform);
+            newCard.name = card;
+            xOffset += 0.5f;
+            zOffset += 0.03f;
+        }
+
+
+    }
+
+    static void sort(List<int> arr, List<string>arr2)
+    {
+        int n = arr.Count;
+
+        // One by one move boundary of unsorted subarray 
+        for (int i = 0; i < n - 1; i++)
+        {
+            // Find the minimum element in unsorted array 
+            int min_idx = i;
+            for (int j = i + 1; j < n; j++)
+                if (arr[j] < arr[min_idx])
+                    min_idx = j;
+
+            // Swap the found minimum element with the first 
+            // element 
+            int temp = arr[min_idx];
+            string temp2 = arr2[min_idx];
+            arr[min_idx] = arr[i];
+            arr2[min_idx] = arr2[i];
+            arr[i] = temp;
+            arr2[i] = temp2;
         }
     }
 }

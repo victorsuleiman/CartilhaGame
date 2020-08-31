@@ -28,18 +28,14 @@ public class UpdateSprite : MonoBehaviour
             i++;
         }
 
-        try
-        {
+
             //if you're assigned to a player, your face is up. if not, it should remain down.
-            if (transform.parent.name == "Player" || transform.parent.name == "Board")
-            {
+        if (transform.parent.name == "Player" || transform.parent.name == "Board")
+        {
                 spriteRenderer = GetComponent<SpriteRenderer>();
                 spriteRenderer.sprite = cardFace;
-            }
-        } catch (NullReferenceException)
-        {
-            print("just for the error not to appear lol");
         }
+
         
         
 
