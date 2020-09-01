@@ -53,7 +53,7 @@ public class UserInput : MonoBehaviour
                             Quaternion.identity, board.transform);
 
                     newCard.name = hit.collider.name;
-                    boardXOffset += 1.5f;
+                    boardXOffset += 2.3f;
 
                     //adding the value to the board list on main script, and who played the card
                     cartilha.board.Add(newCard.name);

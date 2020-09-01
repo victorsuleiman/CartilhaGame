@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.ExceptionServices;
 using UnityEngine;
+using UnityEngine.SocialPlatforms.Impl;
 using UnityEngine.UI;
 
 //THIS GAME IS BEING MADE WITH LOTS OF HELP FROM THIS SOLITAIRE UNITY TUTORIAL BY MEGALOMOBILE: https://www.youtube.com/watch?v=1Cmb181-quI
@@ -20,7 +22,9 @@ public class Cartilha : MonoBehaviour
     //make the "guesses" game logic. prompt the player how many rounds he thinks he will win before starting the round. -> done!
     //when someone plays and wins, take out the pokerChip from its hand -> done!
     //sort the player's hand after dealing -> done!
-    //make more than one round, try to repeat the game logic. Also, make the MATCH scoreboard, update it each end of the round.
+    //make more than one round, try to repeat the game logic. Also, make the MATCH scoreboard, update it each end of the round. -> done!
+    //make the CPU AI smarter by choosing better guess values -> still testing
+    //I forgot: the person who wins the subround must start the next one. Oh boy.
 
 
     public static string[] suits = { "D", "S", "H", "C" };
@@ -68,7 +72,18 @@ public class Cartilha : MonoBehaviour
     public GameObject pokerChip;
 
     //guess list
-    public List<int> guessList;
+    public List<int> guessList = new List<int>();
+
+    //the match will have rounds 1 to 10, where the number of round is the number of cards. 
+    int roundNumber = 2;
+    public int roundsLeft;
+    public bool roundOver = false;
+
+    //match scoreboard to control the points for the whole match
+    public List<int> matchScoreboard = new List<int>();
+
+    //score overlay
+    GameObject overlay;
 
     // Start is called before the first frame update
     void Start()
@@ -79,6 +94,7 @@ public class Cartilha : MonoBehaviour
         CPU2 = GameObject.Find("CPU2");
         CPU3 = GameObject.Find("CPU3");
         boardGameObject = GameObject.Find("Board");
+        overlay = GameObject.Find("Overlay");
         
 
         userInput = FindObjectOfType<UserInput>();
@@ -93,19 +109,15 @@ public class Cartilha : MonoBehaviour
         playerList.Add(CPU3);
         activeTurn.Add(false);
 
-        //populate the scoreboard
+        //populate the scoreboard and the match scoreboard
         foreach (GameObject player in playerList)
         {
             scoreboard.Add(0);
+            matchScoreboard.Add(0);
         }
 
-
-        StartCoroutine(startRound(playerList));
-
-
-        
-
-        //prompt guesses before allowing player to start round.
+        roundsLeft = roundNumber;
+        StartCoroutine(startRound(playerList,roundNumber));
 
         print("it is now Player's turn");
     }   
@@ -122,7 +134,32 @@ public class Cartilha : MonoBehaviour
         }
 
         //I need to check when turns are over. maybe a bool of "just played the card" will help me. Then inside the controlTurns function I turn it off
+        if (roundOver)
+        {
+            //update matchScoreboard and reset scoreboard for the next round
+            score();            
+            for (int i = 0; i < scoreboard.Count; i++)
+            {
+                scoreboard[i] = 0;
+            }
 
+            roundOver = false;
+            roundNumber++;
+
+            //after 10 rounds, the match is over. I'll need to show the final scoreboard and show who won.
+            if (roundNumber > 10)
+            {
+                print("the match is over.");
+            }
+
+            else 
+            {
+                roundsLeft = roundNumber;
+                StartCoroutine(destroyPokerChips());
+                StartCoroutine(startRound(playerList, roundNumber));
+            }
+            
+        }
     }
 
     public static List<string> generateDeck()
@@ -157,14 +194,15 @@ public class Cartilha : MonoBehaviour
     }
 
     //dealing the cards
-    IEnumerator startRound(List<GameObject> playerList)
+    IEnumerator startRound(List<GameObject> playerList, int numberOfCards)
     {
-        yield return new WaitForSeconds(0.5f);
+        resetGuessList();
+        updateOverlay();
+        yield return new WaitForSeconds(4);
         List<string> deck = generateDeck();
         int numberOfCardsStillInTheDeck = deck.Count;
         System.Random random = new System.Random();
         bool verticalOffset = false;
-        
 
         foreach (GameObject p in playerList)
         {
@@ -173,7 +211,7 @@ public class Cartilha : MonoBehaviour
             float yOffset = 0;
             float zOffset = 0.03f;
 
-            for (int i = 0; i < 5; i++)
+            for (int i = 0; i < numberOfCards; i++)
             {
                 int k = random.Next(numberOfCardsStillInTheDeck);
 
@@ -183,7 +221,7 @@ public class Cartilha : MonoBehaviour
                         new Vector3(p.transform.position.x, p.transform.position.y + yOffset, p.transform.position.z + zOffset), 
                         Quaternion.identity, p.transform);
                     newCard.name = deck[k];
-                    yOffset += 0.7f;
+                    yOffset += 0.4f;
                     yield return new WaitForSeconds(0.1f);
                 }
 
@@ -218,10 +256,13 @@ public class Cartilha : MonoBehaviour
         inputField = inputFieldGameObject.GetComponent<InputField>();
         button = buttonGameObject.GetComponent<Button>();
         button.onClick.AddListener(guesses);
+
+        //make sure the active turn of the player is still not active until it presses the guess button
+        activeTurn[0] = false;
     }
 
     //determining who won the round and updating its score on the scoreboard
-    string whoWonRound()
+    string whoWonSubround()
     {
         //it needs a list of values just to compare them. I got a list of card values deck
         //starting from weakest to strongest (not counting the manilha). Maybe I can use it.
@@ -270,7 +311,10 @@ public class Cartilha : MonoBehaviour
         GameObject pokerChip = playerWhoWon.transform.Find("Poker Chip").gameObject;
         Destroy(pokerChip);
         }
-        catch (NullReferenceException) { print("no poker chips left"); }
+        catch (NullReferenceException) { };
+
+        updateOverlay();
+
         return whoWon;
 
     }
@@ -291,23 +335,30 @@ public class Cartilha : MonoBehaviour
             StartCoroutine(cpuPlays(playerList[lastPlayerIndex + 1]));
         } 
         
-
         //this else represents the end of the turn. So I also have to destroy all the cards on the board to initiate another turn
         else 
         {
+            roundsLeft--;
             activeTurn[lastPlayerIndex] = false;
             StartCoroutine(resetBoard());
             activeTurn[0] = true;
-            print(whoWonRound() + " wins the round!");
+            
+            print(whoWonSubround() + " wins the subround!");
             playerTurnLog.Clear();
-            print("It is now Player's turn.");
+            print("It is now Player's turn.");            
         }
-        
+
+        //this represents the end of the whole round. I need to start another round again with numberOfCards++
+        if (roundsLeft == 0)
+        {
+            roundOver = true;
+        }
+
     }
     
     IEnumerator resetBoard()
     {
-        yield return new WaitForSeconds(3);
+        yield return new WaitForSeconds(2);
         //destroy all the cards in the board
         foreach (Transform card in boardGameObject.transform)
         {
@@ -372,7 +423,7 @@ public class Cartilha : MonoBehaviour
                         Quaternion.identity, boardGameObject.transform);
 
         newCard.name = cardsInHand[maxValueIndex];
-        userInput.boardXOffset += 1.5f;
+        userInput.boardXOffset += 2.3f;
 
         //adding the value to the board list, and who played the card
         board.Add(newCard.name);
@@ -393,17 +444,70 @@ public class Cartilha : MonoBehaviour
 
         guessList = new List<int>();
 
-        //for now, we grab the number of guesses of the player and make CPU guess 2 wins each. I'll work on a simple AI after.
+        //add player guess in guessList
         guessList.Add(playerGuess);
-        guessList.Add(2);
-        guessList.Add(2);
-        guessList.Add(2);
+
+        //add CPU guesses
+        for (int i = 1; i < playerList.Count; i++)
+        {
+            guessList.Add(cpuGuesses(playerList[i]));
+        }
 
         activeTurn[0] = true;
 
         Destroy(canvas);
 
+        updateOverlay();
+
         dealPokerChips();
+    }
+
+    int cpuGuesses(GameObject CPU)
+    {
+        int cpuGuesses = 0;
+
+        List<string> deck = generateDeck();
+
+        List<string> cardsInHand = new List<string>();
+        List<int> valuesInHand = new List<int>();
+
+        foreach (Transform cardTransform in CPU.transform)
+        {
+            cardsInHand.Add(cardTransform.gameObject.name);
+        }
+
+        //Grab the position of the card (its value) in deck
+        foreach (string card in cardsInHand)
+        {
+            foreach (string cardName in deck)
+            {
+                if (card == cardName)
+                {
+                    valuesInHand.Add(deck.IndexOf(cardName));
+                    break;
+                }
+            }
+        }
+
+        //if it's early game, number of guesses will be number of cards equal or greater than 32 (ace of diamonds) in CPU's hand
+        if (roundNumber <= 5)
+        {
+            foreach (int cardValue in valuesInHand)
+            {
+                if (cardValue >= 28) cpuGuesses++;
+            }
+        }
+        
+        //if it's late game, number of guesses will be number of cards equal or greater than 20 (ace of diamonds) in CPU's hand
+        else
+        {
+            foreach (int cardValue in valuesInHand)
+            {
+                if (cardValue >= 20) cpuGuesses++;
+            }
+        }
+
+        return cpuGuesses;
     }
 
     void dealPokerChips()
@@ -446,6 +550,21 @@ public class Cartilha : MonoBehaviour
             }
 
             verticalOffset = !verticalOffset;
+        }
+
+        updateOverlay();
+    }
+
+    IEnumerator destroyPokerChips()
+    {
+        yield return new WaitForSeconds(3);
+        foreach (GameObject player in playerList)
+        {
+            //because this will be called at the end of the round, there will only be poker chips as children
+            foreach (Transform child in player.transform)
+            {
+                Destroy(child.gameObject);
+            }
         }
     }
 
@@ -522,6 +641,52 @@ public class Cartilha : MonoBehaviour
             arr2[min_idx] = arr2[i];
             arr[i] = temp;
             arr2[i] = temp2;
+        }
+    }
+
+    void score()
+    {
+        for (int i = 0; i < matchScoreboard.Count; i++)
+        {
+            //if the player scored exactly what he guessed, scoreboard += numberOfGuesses
+            if (guessList[i] == scoreboard[i]) matchScoreboard[i] += guessList[i];
+            else
+            {
+                //if you won less than you've guessed, it's -guess point
+                if (scoreboard[i] < guessList[i]) matchScoreboard[i] -= guessList[i];
+
+                //if you won more than you've guessed, it's -scoreboard point
+                else matchScoreboard[i] -= scoreboard[i];
+
+            }
+
+        }
+
+        //now, update the scores on the screen
+        updateOverlay();
+    }
+
+    private void updateOverlay()
+    {
+        int j = 0;
+        foreach (Transform child in overlay.transform)
+        {
+
+            Text scoreText = child.transform.Find("Score").GetComponent<Text>();
+            scoreText.text = "Score: " + matchScoreboard[j];
+            Text winsText = child.transform.Find("Wins").GetComponent<Text>();
+            winsText.text = "Wins: " + scoreboard[j];
+            Text guessText = child.transform.Find("Guesses").GetComponent<Text>();
+            guessText.text = "Guesses: " + guessList[j];
+            j++;
+        }
+    }
+
+    void resetGuessList()
+    {
+        for (int i = 0; i < guessList.Count; i++)
+        {
+            guessList[i] = 0;
         }
     }
 }
