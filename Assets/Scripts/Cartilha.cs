@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.ExceptionServices;
 using UnityEngine;
 using UnityEngine.SocialPlatforms.Impl;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 
 //THIS GAME IS BEING MADE WITH LOTS OF HELP FROM THIS SOLITAIRE UNITY TUTORIAL BY MEGALOMOBILE: https://www.youtube.com/watch?v=1Cmb181-quI
 
@@ -23,8 +25,15 @@ public class Cartilha : MonoBehaviour
     //when someone plays and wins, take out the pokerChip from its hand -> done!
     //sort the player's hand after dealing -> done!
     //make more than one round, try to repeat the game logic. Also, make the MATCH scoreboard, update it each end of the round. -> done!
-    //make the CPU AI smarter by choosing better guess values -> still testing
-    //I forgot: the person who wins the subround must start the next one. Oh boy.
+    //make the CPU AI smarter by choosing better guess values -> done!
+    //I forgot: the person who wins the turn must start the next one. Oh boy. -> That was a lot of work. done!
+    //Match scoreboard is still buggy. Gotta test it. -> done!
+    //Make CPU AI smarter by letting it choose better cards for each round -> done, but it can be improved.
+    //Make Start Scene with a good title, image and rules -> done!
+    //Make a gameOver scene showing who won the match and the scoreboard
+    //polish the main scene (position of the overlay, placeholder and view of the guessCanvas, etc. -> done!
+
+    //some ideas to better the AI: make it play to win if he's the last person on the turn that needs to win
 
 
     public static string[] suits = { "D", "S", "H", "C" };
@@ -62,7 +71,7 @@ public class Cartilha : MonoBehaviour
     public List<string> playerTurnLog;
 
     //bool list to indicate which turn is active
-    public List<bool> activeTurn;
+    public bool activePlayerTurn = false;
     public bool justPlayed = false;
 
     //now that I can identify who won the round I might as well put a scoreboard.
@@ -75,56 +84,75 @@ public class Cartilha : MonoBehaviour
     public List<int> guessList = new List<int>();
 
     //the match will have rounds 1 to 10, where the number of round is the number of cards. 
-    int roundNumber = 2;
+    int roundNumber = 1;
     public int roundsLeft;
     public bool roundOver = false;
 
     //match scoreboard to control the points for the whole match
     public List<int> matchScoreboard = new List<int>();
 
-    //score overlay
+    //score overlay and log
     GameObject overlay;
+    GameObject logGameObject;
+
+    //turn order for the proper turns
+    public List<string> turnOrder = new List<string>();
+    public List<string> originalOrder = new List<string>();
+    public int numberOfCardsInBoard = 0;
+
+    public List<string> realNames = new List<string>();
+    int realNameIndex = 0;
+    string realName = "";
+
+    GameObject finalScoreboard;
 
     // Start is called before the first frame update
     void Start()
     {
-
         player = GameObject.Find("Player");
         CPU1 = GameObject.Find("CPU1");
         CPU2 = GameObject.Find("CPU2");
         CPU3 = GameObject.Find("CPU3");
         boardGameObject = GameObject.Find("Board");
         overlay = GameObject.Find("Overlay");
+        logGameObject = GameObject.Find("Log");
+        finalScoreboard = GameObject.Find("finalScoreboard");
         
-
         userInput = FindObjectOfType<UserInput>();
 
         //add players to playerList and populate the activeTurn array. Player starts first
         playerList.Add(player);
-        activeTurn.Add(false);
+        realNames.Add("Player");
         playerList.Add(CPU1);
-        activeTurn.Add(false);
+        realNames.Add("Fernando");
         playerList.Add(CPU2);
-        activeTurn.Add(false);
+        realNames.Add("Paulo");
         playerList.Add(CPU3);
-        activeTurn.Add(false);
+        realNames.Add("Lucas");
 
-        //populate the scoreboard and the match scoreboard
+
+        //populate the scoreboard and the match 
+        //In the beggining of the match, player will start, so the turn order will be the same as playerList
         foreach (GameObject player in playerList)
         {
             scoreboard.Add(0);
             matchScoreboard.Add(0);
+            turnOrder.Add(player.name);
+            originalOrder.Add(player.name);
         }
 
         roundsLeft = roundNumber;
         StartCoroutine(startRound(playerList,roundNumber));
 
-        print("it is now Player's turn");
+
+
+        StartCoroutine(log("Player starts the match."));
     }   
 
     // Update is called once per frame
     void Update()
     {
+
         //determining who won: for testing purposes, whenever I add a card to the board I want to see if it can determine who won properly.
         //obviously will change this in the future
         if (justPlayed)
@@ -136,6 +164,7 @@ public class Cartilha : MonoBehaviour
         //I need to check when turns are over. maybe a bool of "just played the card" will help me. Then inside the controlTurns function I turn it off
         if (roundOver)
         {
+
             //update matchScoreboard and reset scoreboard for the next round
             score();            
             for (int i = 0; i < scoreboard.Count; i++)
@@ -149,7 +178,16 @@ public class Cartilha : MonoBehaviour
             //after 10 rounds, the match is over. I'll need to show the final scoreboard and show who won.
             if (roundNumber > 10)
             {
-                print("the match is over.");
+                //when the match is over, copy the contents of matchScoreboard to the finalScoreboard game object.
+                foreach (int s in matchScoreboard)
+                {
+                    finalScoreboard.GetComponent<FinalScoreboard>().scores.Add(s);
+                }
+
+                FindObjectOfType<FinalScoreboard>().yourTimeToShine = true;
+
+                //load gameOver scene
+                SceneManager.LoadScene(2);
             }
 
             else 
@@ -198,7 +236,7 @@ public class Cartilha : MonoBehaviour
     {
         resetGuessList();
         updateOverlay();
-        yield return new WaitForSeconds(4);
+        yield return new WaitForSeconds(1);
         List<string> deck = generateDeck();
         int numberOfCardsStillInTheDeck = deck.Count;
         System.Random random = new System.Random();
@@ -254,11 +292,12 @@ public class Cartilha : MonoBehaviour
         guessTextGameObject = GameObject.Find("Text");
 
         inputField = inputFieldGameObject.GetComponent<InputField>();
+        inputField.placeholder.GetComponent<Text>().text = "0 - " + roundNumber.ToString();
         button = buttonGameObject.GetComponent<Button>();
         button.onClick.AddListener(guesses);
 
         //make sure the active turn of the player is still not active until it presses the guess button
-        activeTurn[0] = false;
+        activePlayerTurn = false;
     }
 
     //determining who won the round and updating its score on the scoreboard
@@ -300,9 +339,14 @@ public class Cartilha : MonoBehaviour
 
         //now we see the position of the card the has won. then we just grab the name of the player from playerTurnLog.
         whoWon = playerTurnLog[whoWonIndex];
+        realNameIndex = originalOrder.IndexOf(whoWon);
+        realName = overlay.transform.GetChild(realNameIndex).name;
+
+        //grabbing the right position on the scoreboard
+        int originalIndex = originalOrder.IndexOf(whoWon);
 
         //updating the scoreboard
-        scoreboard[whoWonIndex]++;
+        scoreboard[originalIndex]++;
 
         //taking out a poker chip from whoever won the round
         GameObject playerWhoWon = GameObject.Find(whoWon);
@@ -320,45 +364,118 @@ public class Cartilha : MonoBehaviour
     }
 
     //controlling the turns and when each player plays
-    void controlTurns()
+    void controlTurns() //called on Update().
     {
-        //order: clockwise. So player goes then CPU1, CPU2, CPU3.
+        string whoWonTurn = "";
+        //order: clockwise. round starts at player. Subject to change
         //maybe I make a bool array of which player is currently active to play. Turns change once a new card is instantiated in the board
-        //In the beggining, player starts. After player plays, set CPU1 to play. If all players played, set player active again.
-        int lastPlayerIndex = activeTurn.IndexOf(true);
 
-        if (lastPlayerIndex != activeTurn.Count - 1)
+        //this condition represents the game is still going on
+        if (numberOfCardsInBoard < 4)
         {
-            activeTurn[lastPlayerIndex] = false;
-            activeTurn[lastPlayerIndex + 1] = true;
-            print("It is now " + playerList[lastPlayerIndex + 1].name + "'s turn.");
-            StartCoroutine(cpuPlays(playerList[lastPlayerIndex + 1]));
-        } 
-        
-        //this else represents the end of the turn. So I also have to destroy all the cards on the board to initiate another turn
-        else 
+            string whoPlays = turnOrder[numberOfCardsInBoard];
+            if (whoPlays != "Player")
+            {
+                //find the CPU's gameObject
+                GameObject whoPlaysGameObject = playerList[0];
+                foreach (GameObject player in playerList)
+                {
+                    if (player.name == whoPlays) whoPlaysGameObject = player;
+                }
+
+                StartCoroutine(cpuPlays(whoPlaysGameObject));
+            }
+            else activePlayerTurn = true;
+        }
+        //this condition represents the turn is over.
+        else
         {
             roundsLeft--;
-            activeTurn[lastPlayerIndex] = false;
+            //activeTurn[lastPlayerIndex] = false;
             StartCoroutine(resetBoard());
-            activeTurn[0] = true;
+            whoWonTurn = whoWonSubround();
             
-            print(whoWonSubround() + " wins the subround!");
+            StartCoroutine(log(realName + " wins the turn!"));
             playerTurnLog.Clear();
-            print("It is now Player's turn.");            
+
+            if (roundsLeft != 0)
+            {
+                
+                //updating the turnOrder list
+                turnOrder[0] = whoWonTurn;
+
+                //where on the playerList is the player who won subround?
+                int whoWonIndex = 0;
+
+                for (int i = 0; i < originalOrder.Count; i++)
+                {
+                    if (originalOrder[i] == whoWonTurn) whoWonIndex = i;
+                }
+
+                int nextPlayerIndex = whoWonIndex + 1;
+                for (int i = 1; i < turnOrder.Count; i++)
+                {
+                    if (nextPlayerIndex > 3)
+                    {
+                        nextPlayerIndex = 0;
+                    }
+
+                    turnOrder[i] = originalOrder[nextPlayerIndex];
+                    nextPlayerIndex++;
+                }
+
+                justPlayed = true;
+            }
+
+            
+            
         }
 
         //this represents the end of the whole round. I need to start another round again with numberOfCards++
         if (roundsLeft == 0)
         {
             roundOver = true;
+
+            //in the next round, the player to the side starts to play. roundNumber can aid me I think
+            int playerStartsTurnIndex = 0;
+            int nextRoundNumber = roundNumber + 1;
+            //rounds 1-4
+            if (nextRoundNumber < 5) 
+            {
+                playerStartsTurnIndex = nextRoundNumber - 1;
+            } 
+            else
+            {
+                //rounds 5 - 8
+                if (nextRoundNumber < 9) playerStartsTurnIndex = nextRoundNumber % 5;
+                //rounds 9 - 10
+                else playerStartsTurnIndex = (nextRoundNumber/5) - 1;
+
+            }
+
+            turnOrder[0] = originalOrder[playerStartsTurnIndex];
+
+            StartCoroutine(log(overlay.transform.GetChild(playerStartsTurnIndex).name + " starts next round."));
+
+            int nextPlayerIndex = playerStartsTurnIndex + 1;
+            for (int i = 1; i < turnOrder.Count; i++)
+            {
+                if (nextPlayerIndex > 3)
+                {
+                    nextPlayerIndex = 0;
+                }
+
+                turnOrder[i] = originalOrder[nextPlayerIndex];
+                nextPlayerIndex++;
+            }
         }
 
     }
     
     IEnumerator resetBoard()
     {
-        yield return new WaitForSeconds(2);
+        numberOfCardsInBoard = 0;
+        yield return new WaitForSeconds(1.4f);
         //destroy all the cards in the board
         foreach (Transform card in boardGameObject.transform)
         {
@@ -367,25 +484,25 @@ public class Cartilha : MonoBehaviour
 
         //reset the board offset position and the variable board itself
         userInput.boardXOffset = 0;
-        board.Clear();
+        board.Clear();       
     }
 
     //making the CPU play and how it will do it
     IEnumerator cpuPlays(GameObject CPU)
     {
-        yield return new WaitForSeconds(2);
+        yield return new WaitForSeconds(1.5f);
 
         List<string> deck = generateDeck();
 
         List<string> cardsInHand = new List<string>();
         List<int> valuesInHand = new List<int>();
 
+        int playIndex;
+
         foreach(Transform cardTransform in CPU.transform)
         {
             cardsInHand.Add(cardTransform.gameObject.name);
         }
-
-        
 
         //Grab the position of the card (its value) in deck
         foreach (string card in cardsInHand)
@@ -400,38 +517,140 @@ public class Cartilha : MonoBehaviour
             }
         }
 
-        //now that the CPU knows the values of the card, for simplifying purposes, it will always choose the maximum value for now.
-        //I can increment the logic after haha
-        int maxValueIndex = 0;
-        int maxValue = 0;
+        //how will it choose
+        //if I have zero guesses left, I will play my weakest card
+        //if I have guesses left and I see a card weaker than my strongest card on the board
+            //if I'm the last or second-to-last player in the turnOrder, I will play: the lowest card that I can possibly win
+            //else, I'm gonna let it pass for now and play my weakest card
+        //else, there's no way I'm gonna win this turn, so I'll play my weakest card
 
-        foreach (int value in valuesInHand)
+        int myCurrentGuesses = guessList[originalOrder.IndexOf(CPU.name)] - scoreboard[originalOrder.IndexOf(CPU.name)];
+        if (myCurrentGuesses == 0)
         {
-            if (maxValue < value)
+            playIndex = findMinValueIndex();
+        }
+        else
+        {
+            if (boardStronger())
             {
-                maxValueIndex = valuesInHand.IndexOf(value);
-                maxValue = value;
+                playIndex = findMinValueIndex();
+                print(CPU.name + ": board is stronger");
             }
+            else
+            {
+                //find my position in the turnOrder
+                int position = numberOfCardsInBoard;
+                if (position < 2) playIndex = findMinValueIndex();
+                else playIndex = playAccordingToTheBoard();
+            }
+        }            
+        
+        playCard(playIndex);
+
+        int findMinValueIndex()
+        {
+            int minValueIdx = 0;
+
+            int minValue = 50;
+
+            foreach (int value in valuesInHand)
+            {
+                if (minValue > value)
+                {
+                    minValueIdx = valuesInHand.IndexOf(value);
+                    minValue = value;
+                }
+            }
+
+            return minValueIdx;
         }
 
-        //Now the CPU plays the card with the maximum value. Destroy it from the hand and instantiate it onto the board
-        Destroy(CPU.transform.GetChild(maxValueIndex).gameObject);
+        int playAccordingToTheBoard()
+        {
+            List<int> options = new List<int>();
 
-        GameObject newCard = Instantiate(cardPrefab,
-                        new Vector3(boardGameObject.transform.position.x + userInput.boardXOffset, boardGameObject.transform.position.y, 
-                            boardGameObject.transform.position.z),
-                        Quaternion.identity, boardGameObject.transform);
+            //see the board
+            int maxBoardValue = 0;
+            foreach (string card in board)
+            {
+                if (deck.IndexOf(card) > maxBoardValue) maxBoardValue = deck.IndexOf(card);
 
-        newCard.name = cardsInHand[maxValueIndex];
-        userInput.boardXOffset += 2.3f;
+            }
+            
+            foreach (int value in valuesInHand)
+            {
+                if (value > maxBoardValue) options.Add(value);
+            }
+            
 
-        //adding the value to the board list, and who played the card
-        board.Add(newCard.name);
-        playerTurnLog.Add(CPU.transform.name);
+            print(CPU.name + ": I have:");
+            foreach (int value in options)
+            {
+                print(value);
+            }
 
-        justPlayed = true;
+            int choice = 0;
+            //only 1 win left, let me use my strong card to get rid of it
+            if (guessList[originalOrder.IndexOf(CPU.name)] - scoreboard[originalOrder.IndexOf(CPU.name)] == 1)
+            {
+                print("let me get rid of my last chip");
+                foreach (int value in options)
+                {
+                    if (value > choice) choice = value;
+                }
+            }
+            else
+            {
+                print("still a more than 1 chip left");
+                choice = 50;
+                foreach (int value in options)
+                {
+                    if (choice > value) choice = value;
+                }
+            }
 
-        
+            
+
+            print("I choose " + choice);
+            return valuesInHand.IndexOf(choice);            
+        }
+
+        void playCard(int index)
+        {
+            //Now the CPU plays the card. Destroy it from the hand and instantiate it onto the board
+            Destroy(CPU.transform.GetChild(index).gameObject);
+
+            GameObject newCard = Instantiate(cardPrefab,
+                            new Vector3(boardGameObject.transform.position.x + userInput.boardXOffset, boardGameObject.transform.position.y,
+                                boardGameObject.transform.position.z),
+                            Quaternion.identity, boardGameObject.transform);
+
+            newCard.name = cardsInHand[index];
+            userInput.boardXOffset += 1.7f;
+
+            //adding the value to the board list, and who played the card
+            board.Add(newCard.name);
+            playerTurnLog.Add(CPU.transform.name);
+            numberOfCardsInBoard++;
+
+            justPlayed = true;
+        }
+
+        bool boardStronger()
+        {
+            //I need to get my max value in hand, the max value in the board and compare the two
+            int myMaxValue = valuesInHand.Max();
+
+            int maxBoardValue = 0;
+            foreach (string card in board)
+            {
+                if (deck.IndexOf(card) > maxBoardValue) maxBoardValue = deck.IndexOf(card);
+            }
+
+            if (myMaxValue > maxBoardValue) return false;
+            else return true;
+
+        }
     }
 
     void guesses()
@@ -452,8 +671,6 @@ public class Cartilha : MonoBehaviour
         {
             guessList.Add(cpuGuesses(playerList[i]));
         }
-
-        activeTurn[0] = true;
 
         Destroy(canvas);
 
@@ -494,7 +711,7 @@ public class Cartilha : MonoBehaviour
         {
             foreach (int cardValue in valuesInHand)
             {
-                if (cardValue >= 28) cpuGuesses++;
+                if (cardValue >= 32) cpuGuesses++;
             }
         }
         
@@ -503,7 +720,7 @@ public class Cartilha : MonoBehaviour
         {
             foreach (int cardValue in valuesInHand)
             {
-                if (cardValue >= 20) cpuGuesses++;
+                if (cardValue >= 28) cpuGuesses++;
             }
         }
 
@@ -528,11 +745,17 @@ public class Cartilha : MonoBehaviour
                 yOffset = -1.3f;
                 for (int i = 0; i < guessList[playerList.IndexOf(player)]; i++)
                 {
+                    if (i == 3 || i == 6 || i == 9)
+                    {
+                        xOffset = -0.5f;
+                        yOffset -= 0.5f;
+                    }
                     GameObject newPokerChip = Instantiate(pokerChip,
                     new Vector3(player.transform.position.x + xOffset, player.transform.position.y + yOffset, player.transform.position.z),
                     Quaternion.identity, player.transform);
                     newPokerChip.name = "Poker Chip";
                     xOffset += 0.5f;
+                    
                 }
             }
             else
@@ -541,11 +764,17 @@ public class Cartilha : MonoBehaviour
                 yOffset = 1f;
                 for (int i = 0; i < guessList[playerList.IndexOf(player)]; i++)
                 {
+                    if (i == 5)
+                    {
+                        xOffset -= 0.5f;
+                        yOffset = 1f;
+                    }
                     GameObject newPokerChip = Instantiate(pokerChip,
                     new Vector3(player.transform.position.x + xOffset, player.transform.position.y + yOffset, player.transform.position.z),
                     Quaternion.identity, player.transform);
                     newPokerChip.name = "Poker Chip";
                     yOffset -= 0.5f;
+                    
                 }
             }
 
@@ -553,11 +782,14 @@ public class Cartilha : MonoBehaviour
         }
 
         updateOverlay();
+
+        //the round can finally start
+        justPlayed = true;
     }
 
     IEnumerator destroyPokerChips()
     {
-        yield return new WaitForSeconds(3);
+        yield return new WaitForSeconds(0.5f);
         foreach (GameObject player in playerList)
         {
             //because this will be called at the end of the round, there will only be poker chips as children
@@ -646,8 +878,10 @@ public class Cartilha : MonoBehaviour
 
     void score()
     {
+
         for (int i = 0; i < matchScoreboard.Count; i++)
         {
+
             //if the player scored exactly what he guessed, scoreboard += numberOfGuesses
             if (guessList[i] == scoreboard[i]) matchScoreboard[i] += guessList[i];
             else
@@ -689,4 +923,12 @@ public class Cartilha : MonoBehaviour
             guessList[i] = 0;
         }
     }
+
+    IEnumerator log(string text)
+    {
+        
+        logGameObject.transform.GetComponentInChildren<Text>().text = text;
+        yield return new WaitForSeconds(1);
+    }
+
 }

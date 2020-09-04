@@ -42,7 +42,7 @@ public class UserInput : MonoBehaviour
                 //who played the card?
                 string whoPlayed = cardToBeDestroyed.transform.parent.name;
 
-                if (whoPlayed == "Player" && cartilha.activeTurn[0])
+                if (whoPlayed == "Player" && cartilha.activePlayerTurn)
                 {
                     Destroy(cardToBeDestroyed);
 
@@ -53,12 +53,14 @@ public class UserInput : MonoBehaviour
                             Quaternion.identity, board.transform);
 
                     newCard.name = hit.collider.name;
-                    boardXOffset += 2.3f;
+                    boardXOffset += 1.7f;
 
                     //adding the value to the board list on main script, and who played the card
                     cartilha.board.Add(newCard.name);
                     cartilha.playerTurnLog.Add(whoPlayed);
                     cartilha.justPlayed = true;
+                    cartilha.numberOfCardsInBoard++;
+                    cartilha.activePlayerTurn = false;
                 }
 
                 

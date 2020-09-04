@@ -115,7 +115,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 325.3, y: -163.74}
+  m_AnchoredPosition: {x: 38.049988, y: -9.4900055}
   m_SizeDelta: {x: 34.26905, y: 24.472832}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &36305393269854455
@@ -303,7 +303,7 @@ GameObject:
   - component: {fileID: 36305393989694312}
   - component: {fileID: 36305393989694313}
   m_Layer: 5
-  m_Name: Canvas
+  m_Name: guessCanvas
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -425,7 +425,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 202.9, y: -166.5}
+  m_AnchoredPosition: {x: -84.350006, y: -12.25}
   m_SizeDelta: {x: 67.89902, y: 18.94564}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &36305394552589408
@@ -586,7 +586,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 273, y: -166.5}
+  m_AnchoredPosition: {x: -14.25, y: -12.25}
   m_SizeDelta: {x: 60.530945, y: 30}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &36305394998907680
