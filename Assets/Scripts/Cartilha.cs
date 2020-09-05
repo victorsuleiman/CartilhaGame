@@ -45,12 +45,9 @@ public class Cartilha : MonoBehaviour
     GameObject CPU3;
     GameObject boardGameObject;
     GameObject buttonGameObject;
-    GameObject inputFieldGameObject;
-    GameObject guessTextGameObject;
     public GameObject canvasPrefab;
     Button button;
-    InputField inputField;
-    
+    Dropdown dropdown;
 
     UserInput userInput;
 
@@ -288,11 +285,13 @@ public class Cartilha : MonoBehaviour
         GameObject canvas = Instantiate(canvasPrefab, transform.position, Quaternion.identity);
         canvas.name = "Canvas";
         buttonGameObject = GameObject.Find("Button");
-        inputFieldGameObject = GameObject.Find("InputField");
-        guessTextGameObject = GameObject.Find("Text");
 
-        inputField = inputFieldGameObject.GetComponent<InputField>();
-        inputField.placeholder.GetComponent<Text>().text = "0 - " + roundNumber.ToString();
+        dropdown = canvas.transform.Find("Dropdown").GetComponent<Dropdown>();
+        dropdown.ClearOptions();
+        List<string> choices = new List<string>();
+        for (int i = 0; i <= roundNumber; i++) choices.Add(i.ToString());
+        dropdown.AddOptions(choices);
+       
         button = buttonGameObject.GetComponent<Button>();
         button.onClick.AddListener(guesses);
 
@@ -657,9 +656,7 @@ public class Cartilha : MonoBehaviour
     {
         GameObject canvas = GameObject.Find("Canvas");
 
-        //grabbing guesses from the player and converting them into int
-        string text = inputField.text.ToString();
-        int playerGuess = Int16.Parse(text);
+        int playerGuess = dropdown.value;
 
         guessList = new List<int>();
 
