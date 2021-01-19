@@ -9,4 +9,9 @@ public class SceneLoader : MonoBehaviour
     {
         SceneManager.LoadScene(1);
     }
+
+    public void LoadMultiplayer()
+    {
+        SceneManager.LoadScene(3);
+    }
 }
