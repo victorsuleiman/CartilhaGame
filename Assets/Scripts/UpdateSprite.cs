@@ -14,6 +14,7 @@ public class UpdateSprite : MonoBehaviour
     void Start()
     {
         cartilha = FindObjectOfType<Cartilha>();
+
         List<string> deck = Cartilha.generateDeck();
 
         //Identify which sprite is the card by the card's name
@@ -22,8 +23,19 @@ public class UpdateSprite : MonoBehaviour
         {
             if (this.name == card)
             {
-                cardFace = cartilha.cardFaces[i];
-                break;
+                //for multiplayer
+                if (cartilha == null)
+                {
+                    MatchManager matchManager = FindObjectOfType<MatchManager>();
+                    cardFace = matchManager.cardFaces[i];
+                }
+                else
+                {
+                    cardFace = cartilha.cardFaces[i];
+                    break;
+                }
+
+                
             }
             i++;
         }
@@ -34,6 +46,12 @@ public class UpdateSprite : MonoBehaviour
         {
                 spriteRenderer = GetComponent<SpriteRenderer>();
                 spriteRenderer.sprite = cardFace;
+        }
+
+        if (cartilha == null)
+        {
+            spriteRenderer = GetComponent<SpriteRenderer>();
+            spriteRenderer.sprite = cardFace;
         }
 
         

@@ -9,11 +9,9 @@ public class CartilhaOnline : NetworkManager
 {
     //Connect 2 players, players can see their positions IRT - done!
     //Dynamic naming of players - done!
-    //For the host, have a button to begin match. Log that the match has begun
+    //Have a button to begin match. Log that the match has begun - done!
     //When the match has begun, deal cards to the player
     //Make the player see their cards only (and the board)
-
-    
 
     public override void OnServerAddPlayer(NetworkConnection conn)
     {
