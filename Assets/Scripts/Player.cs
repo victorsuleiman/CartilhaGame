@@ -45,4 +45,9 @@ public class Player : NetworkBehaviour
     {
         displayName = newDisplayName;
     }
+
+    public string getDisplayName()
+    {
+        return displayName;
+    }
 }

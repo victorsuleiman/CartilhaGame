@@ -10,7 +10,7 @@ public class CartilhaOnline : NetworkManager
     //Connect 2 players, players can see their positions IRT - done!
     //Dynamic naming of players - done!
     //Have a button to begin match. Log that the match has begun - done!
-    //When the match has begun, deal cards to the player
+    //When the match has begun, deal cards to the player and sync them (cards need to be the same between clients) - done!
     //Make the player see their cards only (and the board)
 
     public override void OnServerAddPlayer(NetworkConnection conn)
@@ -18,7 +18,6 @@ public class CartilhaOnline : NetworkManager
         base.OnServerAddPlayer(conn);
 
         Player player = conn.identity.GetComponent<Player>();
-
         player.setDisplayName($"Player {numPlayers}");
 
     }
