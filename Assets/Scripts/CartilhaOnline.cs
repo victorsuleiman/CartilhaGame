@@ -11,7 +11,7 @@ public class CartilhaOnline : NetworkManager
     //Dynamic naming of players - done!
     //Have a button to begin match. Log that the match has begun - done!
     //When the match has begun, deal cards to the player and sync them (cards need to be the same between clients) - done!
-    //Make the player see their cards only (and the board)
+    //Make the player see their cards only (and the board) - done!
 
     public override void OnServerAddPlayer(NetworkConnection conn)
     {

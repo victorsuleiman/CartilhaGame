@@ -65,7 +65,6 @@ public class CardDealer : NetworkBehaviour
         {
 
             List<string> hands = new List<string>();
-            Debug.Log(p.GetComponent<Player>().getDisplayName());
 
             for (int i = 0; i < numberOfCards; i++)
             {
@@ -74,7 +73,6 @@ public class CardDealer : NetworkBehaviour
                 hands.Add(newCard);
                 deck.RemoveAt(k);
                 numberOfCardsStillInTheDeck--;
-                Debug.Log(newCard);
             }
 
             matchManager.playerHands.Add(hands);

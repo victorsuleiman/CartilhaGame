@@ -41,23 +41,29 @@ public class UpdateSprite : MonoBehaviour
         }
 
 
-            //if you're assigned to a player or the board, your face is up. if not, it should remain down.
+        //if you're assigned to a player or the board, your face is up. if not, it should remain down.
         if (transform.parent.name == "Player" || transform.parent.name == "Board")
         {
                 spriteRenderer = GetComponent<SpriteRenderer>();
                 spriteRenderer.sprite = cardFace;
         }
 
+        //for multiplayer
         if (cartilha == null)
         {
             spriteRenderer = GetComponent<SpriteRenderer>();
             spriteRenderer.sprite = cardFace;
+            if (transform.parent.GetComponent<Player>().hasAuthority) spriteRenderer.sprite = cardFace;
+            else spriteRenderer.sprite = cardBack;
+
+
         }
 
         
         
 
     }
+
 
     // Update is called once per frame
     void Update()
